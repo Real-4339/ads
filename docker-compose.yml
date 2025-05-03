@@ -1,0 +1,43 @@
+version: '3.8'
+
+networks:
+  ads-network: 
+    driver: bridge 
+
+services:
+
+  redis:
+    container_name: redis-container
+    hostname: redis
+    image: redis:7.2
+    ports:
+      - 6379:6379
+    networks: 
+      - ads-network
+
+  celery:
+    container_name: celery-container
+    
+    image: celery-image:1.2.1
+    volumes: 
+      - ./ads_celery/logs:/app/logs
+    depends_on:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0  # Also set the result backend
+    networks: 
+      - ads-network
+
+  log-visualizer:
+    container_name: log-visualizer-container
+    image: log-visualizer-image:1.0.0
+    ports:
+      - 8050:8050
+    volumes:
+      - ./visualization:/app
+    depends_on:
+      - celery
+      - redis
+    networks: 
+      - ads-network
